@@ -1,8 +1,33 @@
+# ⚠️ 必须要有这一段，Cargo 才知道这是一个库（package）
 [package]
 name = "quant-storage"
 version.workspace = true
 edition.workspace = true
-authors.workspace = true
-license.workspace = true
 
+# 依赖定义在 package 之后
 [dependencies]
+# 引用核心类型
+quant-core = { path = "../core" }
+
+# SQLx (数据库)
+sqlx = { workspace = true, features = [
+    "runtime-tokio-rustls",
+    "mysql",  # 如果用 MySQL 改成 "mysql"
+    "macros",
+    "chrono",
+    "uuid",
+    "rust_decimal"
+] }
+
+# Redis
+redis = { version = "0.24", features = ["tokio-comp"] }
+
+# 异步与序列化
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+rust_decimal = { workspace = true }

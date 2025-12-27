@@ -2,7 +2,20 @@
 name = "quant-engine"
 version.workspace = true
 edition.workspace = true
-authors.workspace = true
-license.workspace = true
 
 [dependencies]
+# --- 内部模块 ---
+quant-core = { workspace = true }
+quant-storage = { workspace = true }
+# quant-feed = { workspace = true }     # 暂时注释，等后面写了再开
+# quant-strategy = { workspace = true } # 暂时注释
+# quant-execution = { workspace = true } # 暂时注释
+
+# --- 基础设施 ---
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = "0.2" # 用于日志文件轮转
+dotenvy = { workspace = true } # 读取 .env
+chrono = { workspace = true }

@@ -7,6 +7,8 @@ members = [
     "services/*"
 ]
 
+default-members = ["services/engine"]
+
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
@@ -51,6 +53,13 @@ config = "0.14"
 
 # 8. 数据库 (以 SQLx 为例，连接 Postgres)
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "rust_decimal"] }
+
+
+strum = { version = "0.26", features = ["derive"] }
+
+uuid = { version = "1.19", features = ["v4", "fast-rng", "serde"] }
+
+dotenvy = "0.15"
 
 # 9. 内部模块引用 (方便子 crate 互相引用)
 quant-core = { path = "./crates/core" }
