@@ -1,0 +1,61 @@
+# 文件路径: ./Cargo.toml
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/*",
+    "services/*"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["wenwang <1179574672@qq.com>"]
+license = "MIT"
+
+# --- 统一依赖管理 ---
+# 在子 crate 中引用时只需写 { workspace = true }
+[workspace.dependencies]
+
+# 1. 异步运行时与工具
+tokio = { version = "1.38", features = ["full"] } # 核心异步运行时
+tokio-util = { version = "0.7", features = ["codec"] } # 编解码工具
+async-trait = "0.1"                               # 允许在 Trait 中使用 async fn
+futures = "0.3"
+
+# 2. 序列化与数据处理
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+# !!! 金融计算核心库，必须用 Decimal 避免浮点数误差 !!!
+rust_decimal = { version = "1.35", features = ["serde-float"] }
+rust_decimal_macros = "1.35"
+
+# 3. 网络与 API
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] } # HTTP 客户端
+tokio-tungstenite = { version = "0.21", features = ["rustls-tls-native-roots"] } # WebSocket
+url = "2.5"
+
+# 4. 时间处理
+chrono = { version = "0.4", features = ["serde"] }
+
+# 5. 错误处理
+thiserror = "1.0" # 用于库 (crates/*)
+anyhow = "1.0"    # 用于主程序 (services/*)
+
+# 6. 日志与监控
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# 7. 配置管理
+config = "0.14"
+
+# 8. 数据库 (以 SQLx 为例，连接 Postgres)
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "rust_decimal"] }
+
+# 9. 内部模块引用 (方便子 crate 互相引用)
+quant-core = { path = "./crates/core" }
+quant-feed = { path = "./crates/feed" }
+quant-strategy = { path = "./crates/strategy" }
+quant-execution = { path = "./crates/execution" }
+quant-storage = { path = "./crates/storage" }
+quant-risk = { path = "./crates/risk" }
