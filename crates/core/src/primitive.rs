@@ -4,12 +4,14 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
 use std::str::FromStr;
+use sqlx::Type;
 
 // =========================================================================
 // Price (价格)
 // =========================================================================
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default,Type)]
+#[sqlx(transparent)]
 pub struct Price(pub Decimal);
 
 impl Price {
@@ -69,7 +71,8 @@ impl fmt::Display for Price {
 // Quantity (数量)
 // =========================================================================
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default,Type)]
+#[sqlx(transparent)]
 pub struct Quantity(pub Decimal);
 
 impl Quantity {

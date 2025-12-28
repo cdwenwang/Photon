@@ -1,70 +1,108 @@
-use crate::enums::{OrderStatus, OrderType, Side};
-use crate::primitive::{Price, Quantity};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::Uuid;
 
-// =========================================================================
-// Order (标准订单模型)
-// =========================================================================
+use crate::enums::{OrderStatus, OrderType, Side};
+use crate::primitive::{Price, Quantity};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// 订单实体 (Order Entity)
+///
+/// 对应数据库表: `orders` (建议表名复数形式)
+///
+/// 该结构体代表了系统中的一张“订单”。它是交易的核心载体，记录了从“想买”到“成交”的全过程。
+/// 包含了交易所的原始信息（symbol, exchange_order_id）以及系统的内部状态（status, filled_quantity）。
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Order {
-    /// 本地生成的唯一 ID (用于防止重放、日志追踪)
-    pub id: Uuid,
+    /// 数据库物理主键 (自增 ID)
+    /// 类型: BIGINT (u64)
+    /// 作用: 仅用于数据库内部 B+ 树索引和分页优化。
+    /// 注意: 业务逻辑层不应使用此 ID，请认准 `uuid`。
+    #[sqlx(rename = "id")]
+    #[serde(skip)] // 序列化日志/API时通常隐藏内部物理ID
+    pub id: i64,
 
-    /// 交易所返回的订单 ID (下单成功前是 None)
+    /// 订单业务唯一标识 (UUID)
+    /// 对应数据库字段: `order_uuid`
+    /// 作用: 系统全局唯一的订单号。用于日志追踪、状态更新和幂等性校验。
+    #[sqlx(rename = "order_uuid")]
+    pub uuid: Uuid,
+
+    /// 归属策略 UUID (外键)
+    /// 对应数据库字段: `strategy_uuid`
+    /// 作用: 标识该订单是由哪个策略发出的。如果为 `None`，代表是人工手动下单或风控强平单。
+    #[sqlx(rename = "strategy_uuid")]
+    pub strategy_uuid: Option<Uuid>,
+
+    /// 交易所返回的订单 ID
+    /// 作用: 用于后续撤单或查询订单状态时与交易所 API 交互。
+    /// 初始状态可能为 None (尚未发送到交易所)，发送成功后更新。
     pub exchange_order_id: Option<String>,
 
-    /// 交易对 (e.g., "BTC/USDT")
+    /// 交易标的
+    /// 示例: "BTC/USDT"
     pub symbol: String,
 
-    /// 交易所名称 (e.g., "BINANCE", "OKX")
+    /// 交易所名称
+    /// 示例: "BINANCE", "OKX"
     pub exchange: String,
 
-    /// 买卖方向
+    /// 买卖方向 (Buy/Sell)
     pub side: Side,
 
-    /// 订单类型 (限价、市价等)
+    /// 订单类型 (Limit/Market/Stop...)
     pub order_type: OrderType,
 
-    /// 订单状态
+    /// 订单当前状态
+    /// 示例: Created, New, PartiallyFilled, Filled, Canceled
     pub status: OrderStatus,
 
-    /// 委托价格 (市价单为 None)
+    /// 委托价格
+    /// 逻辑: 市价单 (Market) 此字段为 None。
     pub price: Option<Price>,
 
     /// 委托数量
+    /// 作用: 想要购买或出售的基础资产数量。
     pub quantity: Quantity,
 
     /// 已成交数量
+    /// 作用: 随着成交推送不断累加。当 filled_quantity == quantity 时，状态变为 Filled。
+    #[sqlx(default)]
     pub filled_quantity: Quantity,
 
-    /// 成交均价 (部分成交或全部成交后计算)
+    /// 成交均价
+    /// 作用: 只有成交后才有值。
     pub average_price: Option<Price>,
 
-    /// 交易手续费 (可选)
-    pub fee: Option<Decimal>, // 手续费通常直接用 Decimal，因为它可能是 BNB 也可能是 USDT
+    /// 交易手续费
+    /// 注意: 这里直接使用 Decimal，因为手续费币种不确定（可能是 BNB 也可能是 USDT）。
+    pub fee: Option<Decimal>,
 
-    /// 创建时间 (Unix毫秒时间戳) - 对应数据库 BIGINT
-    pub created_at: i64,
+    /// 创建时间 (gmt_create)
+    pub gmt_create: DateTime<Utc>,
 
-    /// 更新时间 (Unix毫秒时间戳)
-    pub updated_at: i64,
+    /// 最后修改时间 (gmt_modified)
+    pub gmt_modified: DateTime<Utc>,
 }
 
 impl Order {
     /// 创建一个新的限价单 (Limit Order)
+    ///
+    /// 注意：此方法只在内存中创建对象，并未持久化到数据库。
+    /// 物理 ID (`db_id`) 默认为 0，只有插入数据库后才有实际意义。
     pub fn new_limit(
         symbol: impl Into<String>,
         exchange: impl Into<String>,
+        strategy_uuid: Option<Uuid>,
         side: Side,
         price: Price,
         quantity: Quantity,
     ) -> Self {
-        let now = Utc::now().timestamp_millis();
         Self {
-            id: Uuid::new_v4(),
+            id: 0,                // 占位符
+            uuid: Uuid::new_v4(), // 生成业务 UUID
+            strategy_uuid,
             exchange_order_id: None,
             symbol: symbol.into(),
             exchange: exchange.into(),
@@ -76,8 +114,8 @@ impl Order {
             filled_quantity: Quantity::ZERO,
             average_price: None,
             fee: None,
-            created_at: now,
-            updated_at: now,
+            gmt_create: Utc::now(),
+            gmt_modified: Utc::now(),
         }
     }
 
@@ -85,46 +123,27 @@ impl Order {
     pub fn new_market(
         symbol: impl Into<String>,
         exchange: impl Into<String>,
+        strategy_uuid: Option<Uuid>,
         side: Side,
         quantity: Quantity,
     ) -> Self {
-        let now = Utc::now().timestamp_millis();
         Self {
-            id: Uuid::new_v4(),
+            id: 0,
+            uuid: Uuid::new_v4(),
+            strategy_uuid,
             exchange_order_id: None,
             symbol: symbol.into(),
             exchange: exchange.into(),
             side,
             order_type: OrderType::Market,
             status: OrderStatus::Created,
-            price: None, // 市价单没有价格
+            price: None, // 市价单无价格
             quantity,
             filled_quantity: Quantity::ZERO,
             average_price: None,
             fee: None,
-            created_at: now,
-            updated_at: now,
+            gmt_create: Utc::now(),
+            gmt_modified: Utc::now(),
         }
     }
-
-    /// 检查订单是否活跃 (可以撤单)
-    pub fn is_active(&self) -> bool {
-        matches!(
-            self.status,
-            OrderStatus::Created | OrderStatus::Pending | OrderStatus::New | OrderStatus::PartiallyFilled
-        )
-    }
-
-    /// 检查订单是否已结束
-    pub fn is_closed(&self) -> bool {
-        !self.is_active()
-    }
-
-    /// 计算剩余未成交数量
-    pub fn remaining_quantity(&self) -> Quantity {
-        self.quantity - self.filled_quantity
-    }
 }
-
-// 为了能在 oms.rs 里用 Decimal，需要引入
-use rust_decimal::Decimal;
