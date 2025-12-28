@@ -15,3 +15,4 @@ thiserror = { workspace = true }
 uuid = { workspace = true }
 strum = { workspace = true }
 sqlx = { workspace = true, features = ["mysql", "json", "macros", "chrono", "uuid"] }
+anyhow = { workspace = true }

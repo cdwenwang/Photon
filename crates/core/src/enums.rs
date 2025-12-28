@@ -107,3 +107,17 @@ pub enum BarPeriod {
     H4,  // 4小时
     D1,  // 日线
 }
+
+/// 交易所枚举
+/// 统一管理系统支持的所有交易所
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Display, EnumString, Type)]
+#[sqlx(type_name = "VARCHAR")] // 告诉 sqlx 数据库里是字符串
+#[sqlx(rename_all = "SCREAMING_SNAKE_CASE")] // BINANCE, OKX
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+pub enum Exchange {
+    Binance,
+    Okx,
+    Bybit,
+    Coinbase,
+    // 可以在这里添加更多...
+}

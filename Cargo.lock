@@ -1119,6 +1119,7 @@ dependencies = [
 name = "quant-core"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "rust_decimal",
  "rust_decimal_macros",

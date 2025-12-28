@@ -5,7 +5,10 @@ use sqlx::FromRow;
 use uuid::Uuid;
 
 use crate::enums::{OrderStatus, OrderType, Side};
+use crate::primitive::CurrencyPair;
 use crate::primitive::{Price, Quantity};
+use crate::Exchange;
+use std::str::FromStr;
 
 /// 订单实体 (Order Entity)
 ///
@@ -41,12 +44,15 @@ pub struct Order {
     pub exchange_order_id: Option<String>,
 
     /// 交易标的
-    /// 示例: "BTC/USDT"
-    pub symbol: String,
+    /// 类型: Struct { base: "BTC", quote: "USDT" }
+    /// 数据库存储: VARCHAR ("BTC/USDT")
+    pub symbol: CurrencyPair,
 
     /// 交易所名称
-    /// 示例: "BINANCE", "OKX"
-    pub exchange: String,
+    /// 类型: Enum (Binance, Okx...)
+    /// 数据库存储: VARCHAR ("BINANCE")
+    /// ⚠️ 修改: String -> Exchange
+    pub exchange: Exchange,
 
     /// 买卖方向 (Buy/Sell)
     pub side: Side,
@@ -93,19 +99,24 @@ impl Order {
     /// 物理 ID (`db_id`) 默认为 0，只有插入数据库后才有实际意义。
     pub fn new_limit(
         symbol: impl Into<String>,
-        exchange: impl Into<String>,
+        exchange: Exchange,
         strategy_uuid: Option<Uuid>,
         side: Side,
         price: Price,
         quantity: Quantity,
     ) -> Self {
+        // 解析 Symbol
+        let symbol_str: String = symbol.into();
+        let pair = CurrencyPair::from_str(&symbol_str)
+            .expect("Invalid symbol format for Position (expected BASE/QUOTE)");
+
         Self {
             id: 0,                // 占位符
             uuid: Uuid::new_v4(), // 生成业务 UUID
             strategy_uuid,
             exchange_order_id: None,
-            symbol: symbol.into(),
-            exchange: exchange.into(),
+            symbol: pair,
+            exchange,
             side,
             order_type: OrderType::Limit,
             status: OrderStatus::Created,
@@ -122,18 +133,22 @@ impl Order {
     /// 创建一个新的市价单 (Market Order)
     pub fn new_market(
         symbol: impl Into<String>,
-        exchange: impl Into<String>,
+        exchange: Exchange,
         strategy_uuid: Option<Uuid>,
         side: Side,
         quantity: Quantity,
     ) -> Self {
+        // 解析 Symbol
+        let symbol_str: String = symbol.into();
+        let pair = CurrencyPair::from_str(&symbol_str)
+            .expect("Invalid symbol format for Position (expected BASE/QUOTE)");
         Self {
             id: 0,
             uuid: Uuid::new_v4(),
             strategy_uuid,
             exchange_order_id: None,
-            symbol: symbol.into(),
-            exchange: exchange.into(),
+            symbol: pair,
+            exchange,
             side,
             order_type: OrderType::Market,
             status: OrderStatus::Created,

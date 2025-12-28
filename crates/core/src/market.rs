@@ -1,5 +1,5 @@
-use crate::enums::BarPeriod;
-use crate::primitive::{Price, Quantity};
+use crate::enums::{BarPeriod, Exchange}; // 引入 Exchange 枚举
+use crate::primitive::{CurrencyPair, Price, Quantity};
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -11,80 +11,115 @@ use sqlx::FromRow;
 ///
 /// 该结构体代表了特定时间周期内（如 1分钟、1小时）的市场价格聚合数据 (OHLCV)。
 ///
-/// ### 架构设计注意:
-/// 1. **存储优化**: 与 `Order` 或 `Strategy` 不同，K 线数据量极大（单交易所单币种每年产生数十万条数据）。
-///    因此，**不使用 UUID** 作为主键，而是使用 `(exchange, symbol, period, start_time)` 作为业务唯一键，
-///    以减少索引占用的磁盘空间，提高写入和范围查询（Range Query）的性能。
-/// 2. **数据流向**: 通常由 `Feed` 模块从交易所 WebSocket 接收，或者由 `DataRecorder` 模块定期合成，
-///    最终存储于数据库供策略回测或实盘初始化计算使用。
+/// ### 架构设计优化:
+/// 1. **强类型化**: `exchange` 和 `symbol` 不再是裸字符串，而是使用了 `Exchange` 枚举和 `CurrencyPair` 结构体。
+///    这保证了业务逻辑中不会出现无效的交易所名称或格式错误的交易对。
+/// 2. **数据库兼容**: 通过实现 `sqlx::Type`，`CurrencyPair` 会自动序列化为 `"BTC/USDT"` 字符串存入数据库，
+///    读取时自动解析回结构体，做到了**业务对象化，存储扁平化**。
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct MarketBar {
     /// 数据库物理主键 (自增 ID)
-    /// 类型: BIGINT (i64)
-    /// 作用: 仅用于数据库内部管理。业务查询通常依赖 `start_time` 范围索引。
     #[sqlx(rename = "id")]
     pub id: i64,
 
-    /// 交易所名称 (e.g., "BINANCE")
-    pub exchange: String,
+    /// 交易所
+    /// 类型: Enum (Binance, Okx...)
+    /// 数据库存储: VARCHAR ("BINANCE")
+    pub exchange: Exchange,
 
-    /// 交易标的 (e.g., "BTC/USDT")
-    pub symbol: String,
+    /// 交易标的
+    /// 类型: Struct { base: "BTC", quote: "USDT" }
+    /// 数据库存储: VARCHAR ("BTC/USDT")
+    pub symbol: CurrencyPair,
 
-    /// K 线周期 (Timeframe)
-    /// 枚举: M1, M5, H1, D1 等
-    /// #[sqlx(rename = "bar_period")]
+    /// K 线周期
+    /// 数据库存储: VARCHAR ("M1", "H1")
     pub period: BarPeriod,
 
-    /// 开盘价 (Open Price)
+    /// 开盘价 (Open)
     pub open: Price,
 
-    /// 最高价 (High Price)
+    /// 最高价 (High)
     pub high: Price,
 
-    /// 最低价 (Low Price)
+    /// 最低价 (Low)
     pub low: Price,
 
-    /// 收盘价 (Close Price)
+    /// 收盘价 (Close)
     pub close: Price,
 
-    /// 成交量 (Base Asset Volume)
-    /// 含义: 基础货币的交易数量 (如 BTC 数量)。
+    /// 成交量 (Volume - Base Asset)
     pub volume: Quantity,
 
-    /// 成交额 (Quote Asset Volume / Turnover)
-    /// 含义: 计价货币的交易总额 (如 USDT 总额)。
-    /// 注意: 部分交易所或数据源可能不提供此字段，故为 Option。
+    /// 成交额 (Amount - Quote Asset)
     pub amount: Option<Decimal>,
 
-    /// K 线开始时间戳
-    /// 格式: Unix Timestamp (毫秒 ms)
-    /// 作用: K 线的唯一时间标识。
+    /// K 线开始时间 (ms)
     pub start_time: i64,
 
-    /// K 线结束时间戳
-    /// 格式: Unix Timestamp (毫秒 ms)
-    /// 计算方式: start_time + period_duration
-    /// 作用: 用于判断 K 线是否已闭合 (Closed)。
+    /// K 线结束时间 (ms)
     pub end_time: i64,
 
-    /// 记录入库时间
-    /// 作用: 记录数据被写入数据库的物理时间，用于延迟分析。
+    /// 入库时间
     pub gmt_create: DateTime<Utc>,
 }
 
 impl MarketBar {
     /// 创建一个新的 K 线实例
     ///
-    /// ### 功能特性:
-    /// 1. **自动计算结束时间**: 根据传入的 `period` 和 `start_time`，自动计算并填充 `end_time`。
-    /// 2. **初始化默认值**: `id` 默认为 0，`amount` 默认为 None (后续可手动设置)。
+    /// 参数 `symbol` 支持传入 `CurrencyPair` 结构体，或者符合 "BASE/QUOTE" 格式的字符串。
     ///
-    /// ### 参数:
-    /// * `start_time`: K 线的起始时间戳 (毫秒)。
+    /// ### 示例:
+    /// ```rust
+    /// // 方式 1: 使用强类型
+    /// let pair = CurrencyPair::new("BTC", "USDT");
+    /// MarketBar::new(Exchange::Binance, pair, ...);
+    ///
+    /// // 方式 2: 使用字符串 (会自动 parse，失败会 panic，建议仅在测试用)
+    /// // 实际生产中建议在上游就转换好 CurrencyPair
+    /// ```
     pub fn new(
-        exchange: impl Into<String>,
-        symbol: impl Into<String>,
+        exchange: Exchange,
+        symbol: impl Into<String>, // 这里为了方便，可以保留 Into<String> 然后内部 parse，或者直接要求 CurrencyPair
+        period: BarPeriod,
+        open: Price,
+        high: Price,
+        low: Price,
+        close: Price,
+        volume: Quantity,
+        start_time: i64,
+    ) -> anyhow::Result<Self> {
+        // 注意：这里返回值变成了 Result，因为字符串解析可能失败
+
+        let duration_ms = Self::period_ms(period);
+
+        // 解析 Symbol
+        let symbol_str: String = symbol.into();
+        // 假设 instrument::CurrencyPair 实现了 FromStr
+        use std::str::FromStr;
+        let currency_pair = CurrencyPair::from_str(&symbol_str)?;
+
+        Ok(Self {
+            id: 0,
+            exchange,
+            symbol: currency_pair,
+            period,
+            open,
+            high,
+            low,
+            close,
+            volume,
+            amount: None,
+            start_time,
+            end_time: start_time + duration_ms,
+            gmt_create: Utc::now(),
+        })
+    }
+
+    pub fn new_with_pair(
+        exchange: Exchange,
+        base: &str,
+        quote: &str,
         period: BarPeriod,
         open: Price,
         high: Price,
@@ -93,39 +128,32 @@ impl MarketBar {
         volume: Quantity,
         start_time: i64,
     ) -> Self {
-        // 预先计算结束时间，避免外部手动计算出错
         let duration_ms = Self::period_ms(period);
-
         Self {
             id: 0,
-            exchange: exchange.into(),
-            symbol: symbol.into(),
+            exchange,
+            symbol: CurrencyPair::new(base, quote),
             period,
             open,
             high,
             low,
             close,
             volume,
-            amount: None, // 默认为空，如有需要需单独赋值
+            amount: None,
             start_time,
             end_time: start_time + duration_ms,
             gmt_create: Utc::now(),
         }
     }
 
-    /// [Internal] 获取 K 线周期对应的毫秒数
-    ///
-    /// 用于计算 `end_time`。
-    /// M1 = 60000ms, H1 = 3600000ms, etc.
     fn period_ms(p: BarPeriod) -> i64 {
         match p {
             BarPeriod::M1 => 60 * 1000,
             BarPeriod::M5 => 5 * 60 * 1000,
-            BarPeriod::M15 => 15 * 60 * 1000, // 补充 M15
+            BarPeriod::M15 => 15 * 60 * 1000,
             BarPeriod::H1 => 3600 * 1000,
             BarPeriod::H4 => 4 * 3600 * 1000,
             BarPeriod::D1 => 24 * 3600 * 1000,
-            _ => 0, // 对于未定义或不支持的周期，暂不增加时长
         }
     }
 }
