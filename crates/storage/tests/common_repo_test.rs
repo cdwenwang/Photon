@@ -3,6 +3,7 @@ mod common_repo_test {
     use quant_storage::repository::common;
     use sqlx::Row;
     use tokio;
+    use tracing::info;
 
     #[tokio::test]
     async fn test_dql() {
@@ -23,5 +24,6 @@ mod common_repo_test {
         )
         .await
         .expect("delete asset failed");
+        info!("insert asset success")
     }
 }
