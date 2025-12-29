@@ -1,7 +1,21 @@
+use crate::repository::common;
 use quant_core::enums::BarPeriod;
 use quant_core::error::QuantError;
 use quant_core::market::MarketBar;
 use sqlx::MySqlPool;
+use tokio::sync::OnceCell;
+
+static MARKET_DATA_POOL: OnceCell<MarketDataRepository> = OnceCell::const_new();
+
+/// 获取市场数据仓储层实例
+pub async fn repository() -> &'static MarketDataRepository {
+    MARKET_DATA_POOL
+        .get_or_init(|| async {
+            let pool = common::get_db_pool().await;
+            MarketDataRepository::new(pool.clone())
+        })
+        .await
+}
 
 /// 市场数据仓储层 (Market Data Repository)
 ///
@@ -53,8 +67,7 @@ impl MarketDataRepository {
             bar.end_time
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(result.rows_affected())
     }
@@ -88,8 +101,7 @@ impl MarketDataRepository {
         .bind(period.to_string())
         .bind(limit)
         .fetch_all(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(bars)
     }
@@ -126,8 +138,7 @@ impl MarketDataRepository {
         .bind(start_ts)
         .bind(end_ts)
         .fetch_all(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(bars)
     }

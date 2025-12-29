@@ -1,9 +1,24 @@
+use crate::repository::common;
+use crate::repository::market_repo::MarketDataRepository;
 use anyhow::Result;
 use quant_core::enums::OrderStatus;
 use quant_core::error::QuantError;
 use quant_core::oms::Order;
 use sqlx::MySqlPool;
+use tokio::sync::OnceCell;
 use uuid::Uuid;
+
+static ORDER_POOL: OnceCell<OrderRepository> = OnceCell::const_new();
+
+/// **获取订单数据仓储层实例**
+pub async fn repository() -> &'static OrderRepository {
+    ORDER_POOL
+        .get_or_init(|| async {
+            let pool = common::get_db_pool().await;
+            OrderRepository::new(pool.clone())
+        })
+        .await
+}
 
 // ⚠️ 修复：添加 Clone
 #[derive(Clone)]
@@ -29,7 +44,7 @@ impl OrderRepository {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             "#,
             order.uuid.to_string(),
-            order.strategy_uuid.map(|u| u.to_string()),
+            order.strategy_uuid,
             order.exchange_order_id,
             order.symbol,
             order.exchange,
@@ -43,8 +58,7 @@ impl OrderRepository {
             order.fee
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(result.rows_affected())
     }
@@ -64,8 +78,7 @@ impl OrderRepository {
         )
         .bind(order_uuid.to_string()) // 手动绑定参数
         .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(order)
     }
@@ -86,8 +99,7 @@ impl OrderRepository {
         )
         .bind(strategy_uuid.to_string())
         .fetch_all(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(orders)
     }
@@ -120,8 +132,7 @@ impl OrderRepository {
             order_uuid.to_string()
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(())
     }

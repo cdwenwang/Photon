@@ -1,9 +1,20 @@
 use sqlx::MySqlPool;
-use uuid::Uuid;
+use tokio::sync::OnceCell;
 
 // 1. 引入 Core 定义的实体和错误
+use crate::repository::common;
 use quant_core::account::{Asset, Position};
 use quant_core::error::QuantError;
+
+static ACCOUNT_POOL: OnceCell<AccountRepository> = OnceCell::const_new();
+pub async fn repository() -> &'static AccountRepository {
+    ACCOUNT_POOL
+        .get_or_init(|| async {
+            let pool = common::get_db_pool().await;
+            AccountRepository::new(pool.clone())
+        })
+        .await
+}
 
 #[derive(Clone)]
 pub struct AccountRepository {
@@ -14,28 +25,22 @@ impl AccountRepository {
     pub fn new(pool: MySqlPool) -> Self {
         Self { pool }
     }
-
-    // =========================================================================
-    // 1. Asset (资产/余额)
-    // =========================================================================
-
-    /// 同步资产余额 (Upsert)
     pub async fn upsert_asset(&self, asset: &Asset) -> Result<u64, QuantError> {
         let result = sqlx::query!(
             r#"
-            INSERT INTO asset (
-                uuid, account_name, exchange, currency, 
-                free, frozen, borrowed
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON DUPLICATE KEY UPDATE 
-                free = VALUES(free), 
-                frozen = VALUES(frozen), 
-                borrowed = VALUES(borrowed)
-            "#,
+        INSERT INTO asset (
+            uuid, account_name, exchange, currency, 
+            free, frozen, borrowed
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+            free = VALUES(free), 
+            frozen = VALUES(frozen), 
+            borrowed = VALUES(borrowed)
+        "#,
             asset.uuid.to_string(),
             asset.account_name,
-            asset.exchange,
+            asset.exchange.to_string(),
             asset.currency,
             asset.free,
             asset.frozen,
@@ -43,8 +48,7 @@ impl AccountRepository {
         )
         .execute(&self.pool)
         .await
-        // ⚠️ 核心修改：将 sqlx::Error 转换为 QuantError::StorageError
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        ?;
 
         Ok(result.rows_affected())
     }
@@ -67,7 +71,7 @@ impl AccountRepository {
         .bind(account_name)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?; // 转换错误
+        ?; // 转换错误
 
         Ok(assets)
     }
@@ -94,7 +98,7 @@ impl AccountRepository {
         .bind(currency)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?; // 转换错误
+        ?; // 转换错误
 
         Ok(asset)
     }
@@ -130,7 +134,7 @@ impl AccountRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?; // 转换错误
+        ?; // 转换错误
 
         Ok(result.rows_affected())
     }
@@ -153,7 +157,7 @@ impl AccountRepository {
         .bind(account_name)
         .fetch_all(&self.pool)
         .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        ?;
 
         Ok(positions)
     }
@@ -166,7 +170,7 @@ impl AccountRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        ?;
 
         Ok(())
     }

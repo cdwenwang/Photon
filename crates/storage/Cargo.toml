@@ -12,7 +12,7 @@ quant-core = { path = "../core" }
 # SQLx (数据库)
 sqlx = { workspace = true, features = [
     "runtime-tokio-rustls",
-    "mysql",  # 如果用 MySQL 改成 "mysql"
+    "mysql", # 如果用 MySQL 改成 "mysql"
     "macros",
     "chrono",
     "uuid",
@@ -20,7 +20,8 @@ sqlx = { workspace = true, features = [
 ] }
 
 # Redis
-redis = { version = "0.24", features = ["tokio-comp"] }
+redis = { workspace = true }
+deadpool-redis = { workspace = true }
 
 # 异步与序列化
 tokio = { workspace = true }
@@ -31,3 +32,5 @@ tracing = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 rust_decimal = { workspace = true }
+dotenvy = { workspace = true }
+rust_decimal_macros = "1.39.0"

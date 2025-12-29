@@ -25,7 +25,7 @@ pub struct Asset {
 
     /// 资产业务唯一标识 (UUID)
     #[sqlx(rename = "uuid")]
-    pub uuid: Uuid,
+    pub uuid: String,
 
     /// 账户组/别名
     pub account_name: String,
@@ -57,7 +57,7 @@ impl Asset {
         let now = Utc::now();
         Self {
             id: 0,
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             account_name: account.to_string(),
             // ✅ 直接赋值枚举
             exchange,
@@ -93,7 +93,7 @@ pub struct Position {
 
     /// 持仓业务唯一标识 (UUID)
     #[sqlx(rename = "uuid")]
-    pub uuid: Uuid,
+    pub uuid: String,
 
     /// 账户组/别名
     pub account_name: String,
@@ -139,7 +139,7 @@ impl Position {
 
         Self {
             id: 0,
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             account_name: account.to_string(),
             // ✅ 直接赋值枚举
             exchange,

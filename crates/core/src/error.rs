@@ -1,5 +1,5 @@
-use thiserror::Error;
 use crate::primitive::{Price, Quantity};
+use thiserror::Error;
 
 /// 统一的量化系统错误定义
 /// 使用 `thiserror` 宏自动生成 Display 和 Error trait
@@ -8,7 +8,6 @@ pub enum QuantError {
     // =================================================================
     // 1. 系统与配置类 (System & Config)
     // =================================================================
-
     #[error("Configuration error: {0}")]
     ConfigError(String),
 
@@ -21,7 +20,6 @@ pub enum QuantError {
     // =================================================================
     // 2. 数据与解析类 (Data & Serialization)
     // =================================================================
-
     #[error("Failed to serialize/deserialize data: {0}")]
     SerializationError(String), // 包装 serde_json::Error
 
@@ -34,7 +32,6 @@ pub enum QuantError {
     // =================================================================
     // 3. 交易业务类 (Trading & OMS) - 最重要
     // =================================================================
-
     #[error("Invalid order price: {0}")]
     InvalidPrice(Price),
 
@@ -57,12 +54,17 @@ pub enum QuantError {
     // 4. 基础设施类 (Infrastructure)
     // 注意：Core 不直接依赖 sqlx/reqwest，用 String 包装错误信息
     // =================================================================
-
     #[error("Exchange network error: {0}")]
     ExchangeError(String), // 包装 HTTP/WebSocket 错误
 
     #[error("Database storage error: {0}")]
-    StorageError(String), // 包装 SQLx/Redis 错误
+    StorageError(#[from] sqlx::Error), // 包装 SQLx/Redis 错误
+
+    #[error("Redis storage error: {0}")]
+    RedisError(#[from] redis::RedisError),
+
+    #[error("Redis storage error: {0}")]
+    RedisSetError(String),
 
     #[error("Data feed disconnected")]
     FeedDisconnected,

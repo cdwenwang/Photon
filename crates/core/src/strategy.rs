@@ -19,7 +19,7 @@ pub struct Strategy {
 
     /// 策略业务唯一标识 (UUID)
     #[sqlx(rename = "uuid")]
-    pub uuid: Uuid,
+    pub uuid: String,
 
     /// 策略实例名称
     pub name: String,
@@ -54,7 +54,7 @@ pub struct StrategyState {
 
     /// 关联的策略业务 UUID (Foreign Key)
     #[sqlx(rename = "strategy_uuid")]
-    pub uuid: Uuid,
+    pub uuid: String,
 
     /// 策略运行时动态数据 (JSON)
     pub state_data: Value,
@@ -73,11 +73,11 @@ pub struct Signal {
 
     /// 信号业务唯一标识 (UUID)
     #[sqlx(rename = "uuid")]
-    pub uuid: Uuid,
+    pub uuid: String,
 
     /// 归属策略的业务 UUID
     #[sqlx(rename = "strategy_uuid")]
-    pub strategy_uuid: Uuid,
+    pub strategy_uuid: String,
 
     /// 交易标的
     /// 类型: CurrencyPair (BASE/QUOTE)
@@ -110,7 +110,7 @@ impl Strategy {
         let now = Utc::now();
         Self {
             id: 0,
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             name: name.into(),
             class_name: class_name.into(),
             status: StrategyStatus::Created,
@@ -136,7 +136,7 @@ impl Strategy {
 impl Signal {
     /// 创建一个限价交易信号
     pub fn new_limit(
-        strategy_uuid: Uuid,
+        strategy_uuid: String,
         symbol: impl Into<String>,
         side: Side,
         price: Price,
@@ -151,7 +151,7 @@ impl Signal {
 
         Self {
             id: 0,
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             strategy_uuid,
             symbol: pair,
             side,
@@ -165,7 +165,7 @@ impl Signal {
 
     /// 创建一个市价交易信号 (不带价格)
     pub fn new_market(
-        strategy_uuid: Uuid,
+        strategy_uuid: String,
         symbol: impl Into<String>,
         side: Side,
         quantity: Quantity,
@@ -177,7 +177,7 @@ impl Signal {
 
         Self {
             id: 0,
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             strategy_uuid,
             symbol: pair,
             side,
@@ -191,7 +191,7 @@ impl Signal {
 }
 
 impl StrategyState {
-    pub fn new(strategy_uuid: Uuid, state_data: Value) -> Self {
+    pub fn new(strategy_uuid: String, state_data: Value) -> Self {
         let now = Utc::now();
         Self {
             id: 0,

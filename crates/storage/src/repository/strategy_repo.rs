@@ -1,10 +1,24 @@
+use crate::repository::common;
 use anyhow::Result;
 use quant_core::enums::StrategyStatus;
 use quant_core::error::QuantError;
 use quant_core::strategy::{Signal, Strategy, StrategyState};
 use serde_json::Value;
 use sqlx::MySqlPool;
+use tokio::sync::OnceCell;
 use uuid::Uuid;
+
+static ORDER_POOL: OnceCell<StrategyRepository> = OnceCell::const_new();
+
+/// **获取策略数据仓储层实例**
+pub async fn repository() -> &'static StrategyRepository {
+    ORDER_POOL
+        .get_or_init(|| async {
+            let pool = common::get_db_pool().await;
+            StrategyRepository::new(pool.clone())
+        })
+        .await
+}
 
 /// 策略仓储层
 /// 负责策略元数据、运行时状态和信号的持久化
@@ -36,8 +50,7 @@ impl StrategyRepository {
             strategy.config              // SQLx 自动处理 serde_json::Value
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(result.rows_affected())
     }
@@ -57,8 +70,7 @@ impl StrategyRepository {
         )
         .bind(uuid.to_string())
         .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(strategy)
     }
@@ -76,8 +88,7 @@ impl StrategyRepository {
             "#,
         )
         .fetch_all(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(strategies)
     }
@@ -99,8 +110,7 @@ impl StrategyRepository {
             uuid.to_string()
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
         Ok(())
     }
 
@@ -127,8 +137,7 @@ impl StrategyRepository {
             state_data
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
         Ok(())
     }
 
@@ -148,8 +157,7 @@ impl StrategyRepository {
         )
         .bind(strategy_uuid.to_string())
         .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(state)
     }
@@ -177,8 +185,7 @@ impl StrategyRepository {
             signal.reason
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(result.rows_affected())
     }
@@ -204,8 +211,7 @@ impl StrategyRepository {
         .bind(strategy_uuid.to_string())
         .bind(limit)
         .fetch_all(&self.pool)
-        .await
-        .map_err(|e| QuantError::StorageError(e.to_string()))?;
+        .await?;
 
         Ok(signals)
     }

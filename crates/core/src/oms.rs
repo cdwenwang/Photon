@@ -30,13 +30,13 @@ pub struct Order {
     /// 对应数据库字段: `order_uuid`
     /// 作用: 系统全局唯一的订单号。用于日志追踪、状态更新和幂等性校验。
     #[sqlx(rename = "order_uuid")]
-    pub uuid: Uuid,
+    pub uuid: String,
 
     /// 归属策略 UUID (外键)
     /// 对应数据库字段: `strategy_uuid`
     /// 作用: 标识该订单是由哪个策略发出的。如果为 `None`，代表是人工手动下单或风控强平单。
     #[sqlx(rename = "strategy_uuid")]
-    pub strategy_uuid: Option<Uuid>,
+    pub strategy_uuid: Option<String>,
 
     /// 交易所返回的订单 ID
     /// 作用: 用于后续撤单或查询订单状态时与交易所 API 交互。
@@ -100,7 +100,7 @@ impl Order {
     pub fn new_limit(
         symbol: impl Into<String>,
         exchange: Exchange,
-        strategy_uuid: Option<Uuid>,
+        strategy_uuid: Option<String>,
         side: Side,
         price: Price,
         quantity: Quantity,
@@ -112,7 +112,7 @@ impl Order {
 
         Self {
             id: 0,                // 占位符
-            uuid: Uuid::new_v4(), // 生成业务 UUID
+            uuid: Uuid::new_v4().to_string(), // 生成业务 UUID
             strategy_uuid,
             exchange_order_id: None,
             symbol: pair,
@@ -134,7 +134,7 @@ impl Order {
     pub fn new_market(
         symbol: impl Into<String>,
         exchange: Exchange,
-        strategy_uuid: Option<Uuid>,
+        strategy_uuid: Option<String>,
         side: Side,
         quantity: Quantity,
     ) -> Self {
@@ -144,7 +144,7 @@ impl Order {
             .expect("Invalid symbol format for Position (expected BASE/QUOTE)");
         Self {
             id: 0,
-            uuid: Uuid::new_v4(),
+            uuid: Uuid::new_v4().to_string(),
             strategy_uuid,
             exchange_order_id: None,
             symbol: pair,

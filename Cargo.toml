@@ -61,6 +61,11 @@ uuid = { version = "1.19", features = ["v4", "fast-rng", "serde"] }
 
 dotenvy = "0.15"
 
+# 缓存数据库配置
+redis = { version = "0.24", features = ["tokio-comp", "script"] }
+# Redis 连接池
+deadpool-redis = "0.14"
+
 # 9. 内部模块引用 (方便子 crate 互相引用)
 quant-core = { path = "./crates/core" }
 quant-feed = { path = "./crates/feed" }
