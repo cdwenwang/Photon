@@ -1,4 +1,6 @@
+use anyhow::Result;
 use dotenvy::dotenv;
+use quant_core::ensure_that;
 use quant_storage::redis::RedisService;
 use uuid::Uuid;
 
@@ -43,7 +45,8 @@ pub async fn test_redis_basic_flow() {
 }
 
 #[tokio::test]
-pub async fn test_lock_with_retry() {
+pub async fn test_lock_with_retry() -> Result<()> {
+    ensure_that!(1 > 0, "用户ID无效: {}", "id");
     let redis_service = service().await;
     let lock_key = "test_lock_unit_test"; // 换个 Key 避免和旧数据冲突
 
@@ -85,4 +88,5 @@ pub async fn test_lock_with_retry() {
     // 5. 再次解锁应该失败 (因为锁已经没了)
     let second_unlock = redis_service.unlock(lock_key, &token).await.unwrap();
     assert!(!second_unlock, "Should fail to unlock a second time");
+    Ok(())
 }

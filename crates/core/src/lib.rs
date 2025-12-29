@@ -1,19 +1,20 @@
+pub mod account;
 pub mod enums;
 pub mod market;
 pub mod oms;
 pub mod primitive;
-pub mod time;
 pub mod strategy;
-pub mod account;
+pub mod time;
+pub mod validate;
 
 // 导出让外部使用
+pub use account::*;
 pub use enums::*;
 pub use oms::*;
 pub use primitive::*;
-pub use time::*;
 pub use strategy::*;
-pub use account::*;
-
+pub use time::*;
+pub use validate::*;
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }
