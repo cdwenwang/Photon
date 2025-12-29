@@ -1,6 +1,7 @@
 use anyhow::Context;
+use anyhow::Result;
 use dotenvy::dotenv;
-use sqlx::mysql::MySqlPoolOptions;
+use sqlx::mysql::{MySqlPoolOptions, MySqlRow};
 use sqlx::MySqlPool;
 use std::time::Duration;
 use tokio::sync::OnceCell;
@@ -49,5 +50,17 @@ pub async fn get_real_pool() -> MySqlPool {
         .expect("Ping query failed");
 
     info!("✅ Successfully connected to MySQL database pool.");
-    return pool;
+    pool
+}
+
+pub async fn dml(sql: &str) -> anyhow::Result<u64> {
+    let pool = get_real_pool().await;
+    let result = sqlx::query(sql).execute(&pool).await?;
+    Ok(result.rows_affected())
+}
+
+pub async fn dql<'a>(sql: &str) -> anyhow::Result<Vec<MySqlRow>> {
+    let pool = get_real_pool().await;
+    let rows = sqlx::query(sql).fetch_all(&pool).await?;
+    Ok(rows)
 }
