@@ -56,8 +56,8 @@ impl MarketDataRepository {
             "#,
             bar.exchange,
             bar.symbol,
-            bar.period.to_string(), // Enum -> String
-            bar.open.0,             // Price -> Decimal
+            bar.bar_period.to_string(), // Enum -> String
+            bar.open.0,                 // Price -> Decimal
             bar.high.0,
             bar.low.0,
             bar.close.0,
@@ -80,25 +80,25 @@ impl MarketDataRepository {
         &self,
         exchange: &str,
         symbol: &str,
-        period: BarPeriod,
+        bar_period: BarPeriod,
         limit: i64,
     ) -> Result<Vec<MarketBar>, QuantError> {
         // 使用 query_as 函数版进行映射
         let bars = sqlx::query_as::<_, MarketBar>(
             r#"
             SELECT 
-                id, exchange, symbol, period as "period: String", 
+                id, exchange, symbol, bar_period,
                 open, high, low, close, volume, amount, 
                 start_time, end_time, gmt_create
             FROM market_bar
-            WHERE exchange = ? AND symbol = ? AND period = ?
+            WHERE exchange = ? AND symbol = ? AND bar_period = ?
             ORDER BY start_time DESC
             LIMIT ?
             "#,
         )
         .bind(exchange)
         .bind(symbol)
-        .bind(period.to_string())
+        .bind(bar_period.to_string())
         .bind(limit)
         .fetch_all(&self.pool)
         .await?;
@@ -109,24 +109,25 @@ impl MarketDataRepository {
     /// 查询指定时间范围的 K 线 (用于回测)
     ///
     /// 排序: 按 start_time 正序 (ASC)
+    /// 排序: 按 start_time 正序 (ASC)
     pub async fn find_bars_by_range(
         &self,
         exchange: &str,
         symbol: &str,
-        period: BarPeriod,
+        bar_period: BarPeriod,
         start_ts: i64,
         end_ts: i64,
     ) -> Result<Vec<MarketBar>, QuantError> {
         let bars = sqlx::query_as::<_, MarketBar>(
             r#"
             SELECT 
-                id, exchange, symbol, period as "period: String", 
+                id, exchange, symbol, bar_period,
                 open, high, low, close, volume, amount, 
                 start_time, end_time, gmt_create
             FROM market_bar
             WHERE exchange = ? 
               AND symbol = ? 
-              AND period = ?
+              AND bar_period = ?
               AND start_time >= ? 
               AND start_time <= ?
             ORDER BY start_time ASC
@@ -134,7 +135,7 @@ impl MarketDataRepository {
         )
         .bind(exchange)
         .bind(symbol)
-        .bind(period.to_string())
+        .bind(bar_period.to_string())
         .bind(start_ts)
         .bind(end_ts)
         .fetch_all(&self.pool)

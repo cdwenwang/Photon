@@ -34,7 +34,8 @@ pub struct MarketBar {
 
     /// K 线周期
     /// 数据库存储: VARCHAR ("M1", "H1")
-    pub period: BarPeriod,
+    #[sqlx(rename = "bar_period")]
+    pub bar_period: BarPeriod,
 
     /// 开盘价 (Open)
     pub open: Price,
@@ -81,7 +82,7 @@ impl MarketBar {
     pub fn new(
         exchange: Exchange,
         symbol: impl Into<String>, // 这里为了方便，可以保留 Into<String> 然后内部 parse，或者直接要求 CurrencyPair
-        period: BarPeriod,
+        bar_period: BarPeriod,
         open: Price,
         high: Price,
         low: Price,
@@ -91,7 +92,7 @@ impl MarketBar {
     ) -> anyhow::Result<Self> {
         // 注意：这里返回值变成了 Result，因为字符串解析可能失败
 
-        let duration_ms = Self::period_ms(period);
+        let duration_ms = Self::period_ms(bar_period);
 
         // 解析 Symbol
         let symbol_str: String = symbol.into();
@@ -103,7 +104,7 @@ impl MarketBar {
             id: 0,
             exchange,
             symbol: currency_pair,
-            period,
+            bar_period,
             open,
             high,
             low,
@@ -120,7 +121,7 @@ impl MarketBar {
         exchange: Exchange,
         base: &str,
         quote: &str,
-        period: BarPeriod,
+        bar_period: BarPeriod,
         open: Price,
         high: Price,
         low: Price,
@@ -128,12 +129,12 @@ impl MarketBar {
         volume: Quantity,
         start_time: i64,
     ) -> Self {
-        let duration_ms = Self::period_ms(period);
+        let duration_ms = Self::period_ms(bar_period);
         Self {
             id: 0,
             exchange,
             symbol: CurrencyPair::new(base, quote),
-            period,
+            bar_period,
             open,
             high,
             low,

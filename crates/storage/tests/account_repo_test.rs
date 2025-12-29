@@ -13,6 +13,12 @@ mod tests {
     // 1. Mock 数据生成辅助函数
     // =========================================================================
 
+    async fn get_test_repo() -> account_repo::AccountRepository {
+        // 复用你的 get_db_pool，但它会返回一个新的 Pool 实例
+        let pool = quant_storage::repository::common::get_real_pool().await;
+        account_repo::AccountRepository::new(pool.clone())
+    }
+
     fn mock_asset(account_name: &str) -> Asset {
         Asset {
             id: 0, // 插入时数据库自增，这里填0即可
@@ -54,7 +60,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_asset_flow() -> Result<(), Box<dyn std::error::Error>> {
-        let repo = account_repo::repository().await;
+        let repo = get_test_repo().await;
         // 使用随机后缀，防止测试并发冲突
         let account_name = format!("test_acc_{}", Uuid::new_v4());
 
@@ -104,7 +110,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_position_flow() -> Result<(), Box<dyn std::error::Error>> {
-        let repo = account_repo::repository().await;
+        let repo = get_test_repo().await;
         let account_name = format!("test_pos_{}", Uuid::new_v4());
 
         // 1. 创建持仓

@@ -41,7 +41,7 @@ url = "2.5"
 chrono = { version = "0.4", features = ["serde"] }
 
 # 5. 错误处理
-thiserror = "1.0" # 用于库 (crates/*)
+thiserror = "2.0.17" # 用于库 (crates/*)
 anyhow = "1.0"    # 用于主程序 (services/*)
 
 # 6. 日志与监控
