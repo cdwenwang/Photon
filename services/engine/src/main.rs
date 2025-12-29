@@ -6,11 +6,10 @@ use tokio::signal;
 use tokio::sync::broadcast;
 use tracing::{error, info, warn};
 
+use quant_core::enums::Side;
 // 引入内部模块
 use quant_core::oms::Order;
 use quant_core::primitive::{Price, Quantity};
-use quant_core::enums::Side;
-use quant_storage::{db::init_db, Storage};
 
 // =========================================================================
 // 1. 日志配置 (输出到控制台 + 文件)
@@ -49,7 +48,7 @@ fn init_logging() -> tracing_appender::non_blocking::WorkerGuard {
 // =========================================================================
 // 2. 模拟一个简单的事件循环 (这是未来的核心)
 // =========================================================================
-async fn run_event_loop(storage: Storage) {
+async fn run_event_loop() {
     info!("🚀 Event Loop Started...");
 
     let (tx, _rx) = broadcast::channel::<String>(1000);
@@ -64,7 +63,6 @@ async fn run_event_loop(storage: Storage) {
     });
 
     // 2. 策略任务
-    let storage_clone = storage.clone(); // 注意：这里最好 clone 一下 storage 传进去
     tokio::spawn(async move {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         info!("💡 Strategy triggered! Placing a test order...");
@@ -87,21 +85,12 @@ async fn main() -> anyhow::Result<()> {
 
     info!("Starting Photon Quant Engine ⚡️");
 
-    // B. 初始化数据库连接
-    // 这里的 context 会在报错时提供额外信息，非常好用
-    let db_url = env::var("DATABASE_URL").context("DATABASE_URL must be set in .env")?;
-
-    info!("Connecting to MySQL at: {}", db_url);
-    let pool = init_db(&db_url).await?;
-
-    // C. 初始化存储层 (容器)
-    let storage = Storage::new(pool);
     info!("📦 Storage module initialized.");
 
     // D. 启动主逻辑
     // 使用 tokio::select! 监听系统信号，实现优雅停机
     tokio::select! {
-        _ = run_event_loop(storage.clone()) => {
+        _ = run_event_loop() => {
             error!("Event loop exited unexpectedly!");
         }
         _ = signal::ctrl_c() => {

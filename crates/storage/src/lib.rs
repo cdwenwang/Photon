@@ -1,8 +1,6 @@
 use sqlx::MySqlPool;
 
 // 声明子模块
-pub mod db;
-pub mod models;
 pub mod redis;
 pub mod repository;
 
