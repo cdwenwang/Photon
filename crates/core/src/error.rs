@@ -1,4 +1,5 @@
 use crate::primitive::{Price, Quantity};
+use std::backtrace::Backtrace;
 use thiserror::Error;
 
 /// 统一的量化系统错误定义

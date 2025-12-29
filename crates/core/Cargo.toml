@@ -17,4 +17,4 @@ strum = { workspace = true }
 sqlx = { workspace = true, features = ["mysql", "json", "macros", "chrono", "uuid"] }
 anyhow = { workspace = true }
 redis = { workspace = true }
-strum_macros = "0.26.4"
+strum_macros = "0.27.2"

@@ -87,7 +87,7 @@ impl MarketDataRepository {
         let bars = sqlx::query_as::<_, MarketBar>(
             r#"
             SELECT 
-                id, exchange, symbol, bar_period,
+                id, exchange, symbol, bar_period ,
                 open, high, low, close, volume, amount, 
                 start_time, end_time, gmt_create
             FROM market_bar
@@ -109,7 +109,6 @@ impl MarketDataRepository {
     /// 查询指定时间范围的 K 线 (用于回测)
     ///
     /// 排序: 按 start_time 正序 (ASC)
-    /// 排序: 按 start_time 正序 (ASC)
     pub async fn find_bars_by_range(
         &self,
         exchange: &str,
@@ -121,7 +120,7 @@ impl MarketDataRepository {
         let bars = sqlx::query_as::<_, MarketBar>(
             r#"
             SELECT 
-                id, exchange, symbol, bar_period,
+                id, exchange, symbol, bar_period ,
                 open, high, low, close, volume, amount, 
                 start_time, end_time, gmt_create
             FROM market_bar
