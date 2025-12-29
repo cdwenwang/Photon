@@ -39,7 +39,7 @@ impl StrategyRepository {
     pub async fn create(&self, strategy: &Strategy) -> Result<u64> {
         let result = sqlx::query!(
             r#"
-            INSERT INTO strategy (uuid, name, class_name, status, config)
+            INSERT INTO `strategy` (uuid, name, class_name, status, config)
             VALUES (?, ?, ?, ?, ?)
             "#,
             strategy.uuid.to_string(),
@@ -63,7 +63,7 @@ impl StrategyRepository {
             SELECT
                 id, uuid, name, class_name, status, config,
                 gmt_create, gmt_modified
-            FROM strategy
+            FROM `strategy`
             WHERE uuid = ?
             "#,
         )
@@ -82,7 +82,7 @@ impl StrategyRepository {
             SELECT
                 id, uuid, name, class_name, status, config,
                 gmt_create, gmt_modified
-            FROM strategy
+            FROM `strategy`
             WHERE status IN ('RUNNING', 'INITIALIZING')
             "#,
         )
@@ -97,7 +97,7 @@ impl StrategyRepository {
         // 如果提供了 reason，则更新 reason；否则保持原值 (COALESCE)
         sqlx::query!(
             r#"
-            UPDATE strategy
+            UPDATE `strategy`
             SET status = ?
             WHERE uuid = ?
             "#,
@@ -119,7 +119,7 @@ impl StrategyRepository {
         // 注意：数据库表字段是 strategy_uuid，实体中对应的字段是 uuid
         sqlx::query!(
             r#"
-            INSERT INTO strategy_state (strategy_uuid, state_data)
+            INSERT INTO `strategy_state` (strategy_uuid, state_data)
             VALUES (?, ?)
             ON DUPLICATE KEY UPDATE state_data = ?
             "#,
@@ -139,7 +139,7 @@ impl StrategyRepository {
             SELECT
                 id, strategy_uuid, state_data,
                 gmt_create, gmt_modified
-            FROM strategy_state
+            FROM `strategy_state`
             WHERE strategy_uuid = ?
             "#,
         )
@@ -190,7 +190,7 @@ impl StrategyRepository {
                 id, uuid, strategy_uuid, symbol, side,
                 price, quantity, reason,
                 gmt_create, gmt_modified
-            FROM signal
+            FROM `signal`
             WHERE strategy_uuid = ?
             ORDER BY gmt_create DESC
             LIMIT ?
