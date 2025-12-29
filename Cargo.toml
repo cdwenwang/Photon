@@ -66,6 +66,8 @@ redis = { version = "0.24", features = ["tokio-comp", "script"] }
 # Redis 连接池
 deadpool-redis = "0.14"
 
+color-eyre = "0.6"
+
 # 9. 内部模块引用 (方便子 crate 互相引用)
 quant-core = { path = "./crates/core" }
 quant-feed = { path = "./crates/feed" }

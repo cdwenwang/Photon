@@ -1,5 +1,4 @@
 pub mod enums;
-pub mod error;
 pub mod market;
 pub mod oms;
 pub mod primitive;

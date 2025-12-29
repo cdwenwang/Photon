@@ -3,8 +3,8 @@ use tokio::sync::OnceCell;
 
 // 1. 引入 Core 定义的实体和错误
 use crate::repository::common;
+use anyhow::Result;
 use quant_core::account::{Asset, Position};
-use quant_core::error::QuantError;
 
 static ACCOUNT_POOL: OnceCell<AccountRepository> = OnceCell::const_new();
 pub async fn repository() -> &'static AccountRepository {
@@ -25,7 +25,7 @@ impl AccountRepository {
     pub fn new(pool: MySqlPool) -> Self {
         Self { pool }
     }
-    pub async fn upsert_asset(&self, asset: &Asset) -> Result<u64, QuantError> {
+    pub async fn upsert_asset(&self, asset: &Asset) -> Result<u64> {
         let result = sqlx::query!(
             r#"
         INSERT INTO asset (
@@ -47,17 +47,13 @@ impl AccountRepository {
             asset.borrowed
         )
         .execute(&self.pool)
-        .await
-        ?;
+        .await?;
 
         Ok(result.rows_affected())
     }
 
     /// 查询某账户下的所有资产余额
-    pub async fn find_assets_by_account(
-        &self,
-        account_name: &str,
-    ) -> Result<Vec<Asset>, QuantError> {
+    pub async fn find_assets_by_account(&self, account_name: &str) -> Result<Vec<Asset>> {
         let assets = sqlx::query_as::<_, Asset>(
             r#"
             SELECT 
@@ -70,8 +66,7 @@ impl AccountRepository {
         )
         .bind(account_name)
         .fetch_all(&self.pool)
-        .await
-        ?; // 转换错误
+        .await?; // 转换错误
 
         Ok(assets)
     }
@@ -82,7 +77,7 @@ impl AccountRepository {
         account_name: &str,
         exchange: &str,
         currency: &str,
-    ) -> Result<Option<Asset>, QuantError> {
+    ) -> Result<Option<Asset>> {
         let asset = sqlx::query_as::<_, Asset>(
             r#"
             SELECT 
@@ -97,8 +92,7 @@ impl AccountRepository {
         .bind(exchange)
         .bind(currency)
         .fetch_optional(&self.pool)
-        .await
-        ?; // 转换错误
+        .await?; // 转换错误
 
         Ok(asset)
     }
@@ -108,7 +102,7 @@ impl AccountRepository {
     // =========================================================================
 
     /// 同步持仓信息 (Upsert)
-    pub async fn upsert_position(&self, pos: &Position) -> Result<u64, QuantError> {
+    pub async fn upsert_position(&self, pos: &Position) -> Result<u64> {
         let result = sqlx::query!(
             r#"
             INSERT INTO `position` (
@@ -133,17 +127,13 @@ impl AccountRepository {
             pos.leverage
         )
         .execute(&self.pool)
-        .await
-        ?; // 转换错误
+        .await?; // 转换错误
 
         Ok(result.rows_affected())
     }
 
     /// 查询某账户下的所有持仓
-    pub async fn find_positions_by_account(
-        &self,
-        account_name: &str,
-    ) -> Result<Vec<Position>, QuantError> {
+    pub async fn find_positions_by_account(&self, account_name: &str) -> Result<Vec<Position>> {
         let positions = sqlx::query_as::<_, Position>(
             r#"
             SELECT 
@@ -156,21 +146,19 @@ impl AccountRepository {
         )
         .bind(account_name)
         .fetch_all(&self.pool)
-        .await
-        ?;
+        .await?;
 
         Ok(positions)
     }
 
     /// 清空某账户的所有持仓
-    pub async fn clear_positions(&self, account_name: &str) -> Result<(), QuantError> {
+    pub async fn clear_positions(&self, account_name: &str) -> Result<()> {
         sqlx::query!(
             "DELETE FROM `position` WHERE account_name = ?",
             account_name
         )
         .execute(&self.pool)
-        .await
-        ?;
+        .await?;
 
         Ok(())
     }

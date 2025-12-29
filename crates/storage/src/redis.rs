@@ -1,8 +1,6 @@
-use crate::repository::account_repo::AccountRepository;
 use anyhow::{Context, Result};
 use deadpool_redis::{Config, Pool, Runtime};
 use dotenvy::dotenv;
-use quant_core::error::QuantError;
 use redis::{AsyncCommands, FromRedisValue, Script};
 use std::fmt::Debug;
 use tokio::sync::OnceCell;
@@ -44,16 +42,8 @@ impl RedisService {
 
     /// 基础 Set 操作
     /// 基础 Set 操作
-    pub async fn set(
-        &self,
-        key: &str,
-        value: &str,
-        expire_seconds: Option<u64>,
-    ) -> Result<(), QuantError> {
-        let mut conn = self
-            .get_connection()
-            .await
-            .map_err(|e| QuantError::RedisSetError(e.to_string()))?;
+    pub async fn set(&self, key: &str, value: &str, expire_seconds: Option<u64>) -> Result<()> {
+        let mut conn = self.get_connection().await?;
 
         let _: () = conn.set(key, value).await?;
 
@@ -63,20 +53,14 @@ impl RedisService {
         Ok(())
     }
     /// 基础 Get 操作
-    pub async fn get(&self, key: &str) -> Result<Option<String>, QuantError> {
-        let mut conn = self
-            .get_connection()
-            .await
-            .map_err(|e| QuantError::RedisSetError(e.to_string()))?;
+    pub async fn get(&self, key: &str) -> Result<Option<String>> {
+        let mut conn = self.get_connection().await?;
         let result: Option<String> = conn.get(key).await?;
         Ok(result)
     }
 
-    pub async fn delete(&self, key: &str) -> Result<(), QuantError> {
-        let mut conn = self
-            .get_connection()
-            .await
-            .map_err(|e| QuantError::RedisSetError(e.to_string()))?;
+    pub async fn delete(&self, key: &str) -> Result<()> {
+        let mut conn = self.get_connection().await?;
         let _: () = conn.del(key).await?;
         Ok(())
     }

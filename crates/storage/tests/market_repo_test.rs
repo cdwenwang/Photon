@@ -4,6 +4,7 @@ mod tests {
     use quant_core::market::MarketBar;
     use quant_core::primitive::{Price, Quantity};
     // 假设 Price/Quantity 在这里
+    use anyhow::Result;
     use quant_storage::repository::market_repo;
 
     use rust_decimal_macros::dec;
@@ -52,7 +53,7 @@ mod tests {
 
     /// 测试保存和更新逻辑 (Upsert)
     #[tokio::test]
-    async fn test_save_and_update_bar() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_save_and_update_bar() -> Result<()> {
         let repo = get_test_repo().await;
 
         // 使用随机 Symbol 防止并发测试冲突
@@ -114,7 +115,7 @@ mod tests {
 
     /// 测试查询最近 K 线 (Pagination & Sorting)
     #[tokio::test]
-    async fn test_find_recent_bars() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_find_recent_bars() -> Result<()> {
         let repo = get_test_repo().await;
         let unique_symbol = format!("ETH_{}/USDT", &Uuid::new_v4().simple().to_string()[..8]);
         let period = BarPeriod::H1;
@@ -157,7 +158,7 @@ mod tests {
 
     /// 测试按时间范围查询 (Time Range Filtering)
     #[tokio::test]
-    async fn test_find_bars_by_range() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_find_bars_by_range() -> Result<()> {
         let repo = get_test_repo().await;
         let unique_symbol = format!("SOL_{}/USDT", &Uuid::new_v4().simple().to_string()[..8]);
         let period = BarPeriod::D1;

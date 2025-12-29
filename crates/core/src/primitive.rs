@@ -3,7 +3,7 @@ use rust_decimal::prelude::*;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use sqlx::error::BoxDynError;
-use sqlx::mysql::{MySqlArguments, MySqlValueRef};
+use sqlx::mysql::MySqlValueRef;
 use sqlx::{Database, Decode, Encode, MySql, Type};
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};

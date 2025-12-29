@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     // 假设你的 Core 实体位于这里，根据实际情况调整引用路径
+    use anyhow::Result;
     use quant_core::account::{Asset, Position};
     use quant_core::enums::{Exchange, Side};
     use quant_core::primitive::CurrencyPair;
@@ -59,7 +60,7 @@ mod tests {
     // =========================================================================
 
     #[tokio::test]
-    async fn test_asset_flow() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_asset_flow() -> Result<()> {
         let repo = get_test_repo().await;
         // 使用随机后缀，防止测试并发冲突
         let account_name = format!("test_acc_{}", Uuid::new_v4());
@@ -109,7 +110,7 @@ mod tests {
     // =========================================================================
 
     #[tokio::test]
-    async fn test_position_flow() -> Result<(), Box<dyn std::error::Error>> {
+    async fn test_position_flow() -> Result<()> {
         let repo = get_test_repo().await;
         let account_name = format!("test_pos_{}", Uuid::new_v4());
 

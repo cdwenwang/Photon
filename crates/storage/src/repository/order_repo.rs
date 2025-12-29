@@ -1,8 +1,6 @@
 use crate::repository::common;
-use crate::repository::market_repo::MarketDataRepository;
 use anyhow::Result;
 use quant_core::enums::OrderStatus;
-use quant_core::error::QuantError;
 use quant_core::oms::Order;
 use sqlx::MySqlPool;
 use tokio::sync::OnceCell;
@@ -33,7 +31,7 @@ impl OrderRepository {
 
     // insert 方法保持不变，因为它用的是 query! 宏来检查 SQL 语法，这很好
     // 只要传入参数类型匹配即可 (String 对 String, Decimal 对 Decimal)
-    pub async fn insert(&self, order: &Order) -> Result<u64, QuantError> {
+    pub async fn insert(&self, order: &Order) -> Result<u64> {
         let result = sqlx::query!(
             r#"
             INSERT INTO `order` (
@@ -64,7 +62,7 @@ impl OrderRepository {
     }
 
     /// ⚠️ 修复：改用 sqlx::query_as (函数版)
-    pub async fn find_by_uuid(&self, order_uuid: Uuid) -> Result<Option<Order>, QuantError> {
+    pub async fn find_by_uuid(&self, order_uuid: Uuid) -> Result<Option<Order>> {
         let order = sqlx::query_as::<_, Order>(
             r#"
             SELECT 
@@ -84,7 +82,7 @@ impl OrderRepository {
     }
 
     /// ⚠️ 修复：改用 sqlx::query_as (函数版)
-    pub async fn find_by_strategy(&self, strategy_uuid: Uuid) -> Result<Vec<Order>, QuantError> {
+    pub async fn find_by_strategy(&self, strategy_uuid: Uuid) -> Result<Vec<Order>> {
         let orders = sqlx::query_as::<_, Order>(
             r#"
             SELECT 
@@ -113,7 +111,7 @@ impl OrderRepository {
         filled_qty: rust_decimal::Decimal,
         avg_price: Option<rust_decimal::Decimal>,
         fee: Option<rust_decimal::Decimal>,
-    ) -> Result<(), QuantError> {
+    ) -> Result<()> {
         sqlx::query!(
             r#"
             UPDATE `order`

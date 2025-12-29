@@ -1,7 +1,6 @@
 use crate::repository::common;
 use anyhow::Result;
 use quant_core::enums::StrategyStatus;
-use quant_core::error::QuantError;
 use quant_core::strategy::{Signal, Strategy, StrategyState};
 use serde_json::Value;
 use sqlx::MySqlPool;
@@ -37,7 +36,7 @@ impl StrategyRepository {
     // =========================================================================
 
     /// 创建/注册一个新策略
-    pub async fn create(&self, strategy: &Strategy) -> Result<u64, QuantError> {
+    pub async fn create(&self, strategy: &Strategy) -> Result<u64> {
         let result = sqlx::query!(
             r#"
             INSERT INTO strategy (uuid, name, class_name, status, config)
@@ -56,7 +55,7 @@ impl StrategyRepository {
     }
 
     /// 根据 UUID 查询策略
-    pub async fn find_by_uuid(&self, uuid: Uuid) -> Result<Option<Strategy>, QuantError> {
+    pub async fn find_by_uuid(&self, uuid: Uuid) -> Result<Option<Strategy>> {
         // 使用 query_as 函数而非宏，利用 FromRow  trait 进行自动映射
         // 这样可以自动处理 Enum 和 UUID 的转换
         let strategy = sqlx::query_as::<_, Strategy>(
@@ -77,7 +76,7 @@ impl StrategyRepository {
 
     /// 获取所有需要启动的策略 (状态为 Running 或 Initializing)
     /// 系统启动时调用此方法加载策略
-    pub async fn find_active_strategies(&self) -> Result<Vec<Strategy>, QuantError> {
+    pub async fn find_active_strategies(&self) -> Result<Vec<Strategy>> {
         let strategies = sqlx::query_as::<_, Strategy>(
             r#"
             SELECT
@@ -94,11 +93,7 @@ impl StrategyRepository {
     }
 
     /// 更新策略状态
-    pub async fn update_status(
-        &self,
-        uuid: Uuid,
-        status: StrategyStatus,
-    ) -> Result<(), QuantError> {
+    pub async fn update_status(&self, uuid: Uuid, status: StrategyStatus) -> Result<()> {
         // 如果提供了 reason，则更新 reason；否则保持原值 (COALESCE)
         sqlx::query!(
             r#"
@@ -120,11 +115,7 @@ impl StrategyRepository {
 
     /// 保存/更新策略状态 (Upsert)
     /// 如果不存在则插入，如果存在则更新 state_data
-    pub async fn save_state(
-        &self,
-        strategy_uuid: Uuid,
-        state_data: &Value,
-    ) -> Result<(), QuantError> {
+    pub async fn save_state(&self, strategy_uuid: Uuid, state_data: &Value) -> Result<()> {
         // 注意：数据库表字段是 strategy_uuid，实体中对应的字段是 uuid
         sqlx::query!(
             r#"
@@ -142,10 +133,7 @@ impl StrategyRepository {
     }
 
     /// 加载策略状态
-    pub async fn load_state(
-        &self,
-        strategy_uuid: Uuid,
-    ) -> Result<Option<StrategyState>, QuantError> {
+    pub async fn load_state(&self, strategy_uuid: Uuid) -> Result<Option<StrategyState>> {
         let state = sqlx::query_as::<_, StrategyState>(
             r#"
             SELECT
@@ -167,7 +155,7 @@ impl StrategyRepository {
     // =========================================================================
 
     /// 记录交易信号
-    pub async fn save_signal(&self, signal: &Signal) -> Result<u64, QuantError> {
+    pub async fn save_signal(&self, signal: &Signal) -> Result<u64> {
         let result = sqlx::query!(
             r#"
             INSERT INTO `signal` (
@@ -195,7 +183,7 @@ impl StrategyRepository {
         &self,
         strategy_uuid: Uuid,
         limit: i64,
-    ) -> Result<Vec<Signal>, QuantError> {
+    ) -> Result<Vec<Signal>> {
         let signals = sqlx::query_as::<_, Signal>(
             r#"
             SELECT

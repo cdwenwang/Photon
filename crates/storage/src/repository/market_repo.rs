@@ -1,6 +1,6 @@
 use crate::repository::common;
+use anyhow::Result;
 use quant_core::enums::BarPeriod;
-use quant_core::error::QuantError;
 use quant_core::market::MarketBar;
 use sqlx::MySqlPool;
 use tokio::sync::OnceCell;
@@ -36,7 +36,7 @@ impl MarketDataRepository {
     /// 逻辑: 根据 (exchange, symbol, period, start_time) 唯一索引:
     /// - 不存在: 插入新记录。
     /// - 已存在: 更新 OHLCV 和成交量 (覆盖更新)。
-    pub async fn save(&self, bar: &MarketBar) -> Result<u64, QuantError> {
+    pub async fn save(&self, bar: &MarketBar) -> Result<u64> {
         let result = sqlx::query!(
             r#"
             INSERT INTO `market_bar` (
@@ -82,7 +82,7 @@ impl MarketDataRepository {
         symbol: &str,
         bar_period: BarPeriod,
         limit: i64,
-    ) -> Result<Vec<MarketBar>, QuantError> {
+    ) -> Result<Vec<MarketBar>> {
         // 使用 query_as 函数版进行映射
         let bars = sqlx::query_as::<_, MarketBar>(
             r#"
@@ -116,11 +116,11 @@ impl MarketDataRepository {
         bar_period: BarPeriod,
         start_ts: i64,
         end_ts: i64,
-    ) -> Result<Vec<MarketBar>, QuantError> {
+    ) -> Result<Vec<MarketBar>> {
         let bars = sqlx::query_as::<_, MarketBar>(
             r#"
             SELECT 
-                id, exchange, symbol, bar_period ,
+                id, exchange, symbol, bar_period  ,
                 open, high, low, close, volume, amount, 
                 start_time, end_time, gmt_create
             FROM market_bar
