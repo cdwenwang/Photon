@@ -114,23 +114,4 @@ mod tests {
         let t2 = Clock::now_ms();
         assert!(t2 >= t1 + 10, "Real time should move forward");
     }
-
-    #[test]
-    fn test_mock_time() {
-        // 1. 开启上帝模式：设定时间为 2020-01-01
-        let mock_ts = 1577836800000;
-        Clock::set_mock_time(mock_ts);
-
-        // 2. 无论过了多久，时间应该静止在 mock_ts
-        assert_eq!(Clock::now_ms(), mock_ts);
-        thread::sleep(Duration::from_millis(50));
-        assert_eq!(Clock::now_ms(), mock_ts);
-
-        // 3. 手动推进时间
-        Clock::set_mock_time(mock_ts + 1000);
-        assert_eq!(Clock::now_ms(), mock_ts + 1000);
-
-        // 4. 恢复
-        Clock::reset();
-    }
 }

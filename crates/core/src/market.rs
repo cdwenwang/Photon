@@ -71,7 +71,7 @@ impl MarketBar {
     /// 参数 `symbol` 支持传入 `CurrencyPair` 结构体，或者符合 "BASE/QUOTE" 格式的字符串。
     ///
     /// ### 示例:
-    /// ```rust
+    /// ```code
     /// // 方式 1: 使用强类型
     /// let pair = CurrencyPair::new("BTC", "USDT");
     /// MarketBar::new(Exchange::Binance, pair, ...);

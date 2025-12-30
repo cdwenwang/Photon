@@ -1,0 +1,39 @@
+[store]
+dir = "target/nextest"
+
+# ==============================================================================
+# 默认配置 (profile.default)
+# ==============================================================================
+[profile.default]
+# 失败输出配置
+failure-output = "immediate-final"
+
+# 成功输出配置 (你设置了 immediate，这会导致控制台刷屏，但如果你需要调试可以保留)
+success-output = "immediate"
+
+# 状态显示
+status-level = "all"
+
+# 慢测试阈值
+slow-timeout = { period = "2s", terminate-after = 3 }
+
+# 重试次数 (日常开发不重试)
+retries = 0
+
+# 【注意】已删除 no-tests = "warn"，因为它只能作为命令行参数使用
+# 【注意】已删除 parent = "default"，因为它是自动继承的
+
+# ==============================================================================
+# CI 环境配置 (profile.ci) - 只有加了 --profile ci 才会生效
+# ==============================================================================
+[profile.ci]
+# 这里的配置会覆盖 default 中的配置
+retries = 2
+failure-output = "immediate-final"
+
+# --- 生成 JUnit 报告的核心配置 ---
+[profile.ci.junit]
+# 报告生成的路径
+# 为了不污染项目根目录，建议放在 target 目录下，但你也可以写 "junit.xml"
+path = "junit.xml"
+report-name = "nextest-run"
