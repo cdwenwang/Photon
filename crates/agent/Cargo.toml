@@ -19,7 +19,7 @@ async-openai = { workspace = true }
 # 用于计算 Token 数量，防止 Prompt 过长
 tiktoken-rs = { workspace = true }
 # 如果需要自己发 HTTP 请求 (比如 Google Search)
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["blocking", "json"] }
 
 # --- 3. 内部模块依赖 ---
 quant-core = { workspace = true }
@@ -28,3 +28,4 @@ quant-feed = { workspace = true }
 uuid = { version = "1.19.0", features = ["v4"] }
 futures = "0.3.31"     # Agent 需要看行情
 # quant-risk = { workspace = true }   # 如果 Agent 需要预检风控
+dotenvy = { workspace = true }

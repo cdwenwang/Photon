@@ -1,7 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-
-pub mod openai;
+mod gemini3_flash;
 
 /// 模型后端抽象接口 (ModelBackend)
 ///
