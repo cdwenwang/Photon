@@ -1,0 +1,30 @@
+[package]
+name = "quant-agent"  # 核心包名
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# --- 1. 核心依赖 (从 Workspace 继承) ---
+tokio = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+schemars = { workspace = true }
+
+# --- 2. AI & 网络特有依赖 ---
+# 用于调用 OpenAI/DeepSeek 标准接口
+async-openai = { workspace = true }
+# 用于计算 Token 数量，防止 Prompt 过长
+tiktoken-rs = { workspace = true }
+# 如果需要自己发 HTTP 请求 (比如 Google Search)
+reqwest = { workspace = true }
+
+# --- 3. 内部模块依赖 ---
+quant-core = { workspace = true }
+quant-storage = { workspace = true }  # Agent 需要查库
+quant-feed = { workspace = true }
+uuid = { version = "1.19.0", features = ["v4"] }
+futures = "0.3.31"     # Agent 需要看行情
+# quant-risk = { workspace = true }   # 如果 Agent 需要预检风控

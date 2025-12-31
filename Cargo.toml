@@ -16,33 +16,33 @@ authors = ["wenwang <1179574672@qq.com>"]
 license = "MIT"
 
 # --- 统一依赖管理 ---
-# 在子 crate 中引用时只需写 { workspace = true }
 [workspace.dependencies]
 
 # 1. 异步运行时与工具
-tokio = { version = "1.38", features = ["full"] } # 核心异步运行时
-tokio-util = { version = "0.7", features = ["codec"] } # 编解码工具
-async-trait = "0.1"                               # 允许在 Trait 中使用 async fn
+tokio = { version = "1.38", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+async-trait = "0.1"
 futures = "0.3"
 
 # 2. 序列化与数据处理
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-# !!! 金融计算核心库，必须用 Decimal 避免浮点数误差 !!!
 rust_decimal = { version = "1.35", features = ["serde-float"] }
 rust_decimal_macros = "1.35"
+# [新增] 用于生成 Tool JSON Schema，做 Agent 工具调用时非常有用
+schemars = "0.8"
 
 # 3. 网络与 API
-reqwest = { version = "0.12", features = ["json", "rustls-tls"] } # HTTP 客户端
-tokio-tungstenite = { version = "0.21", features = ["rustls-tls-native-roots"] } # WebSocket
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+tokio-tungstenite = { version = "0.21", features = ["rustls-tls-native-roots"] }
 url = "2.5"
 
 # 4. 时间处理
 chrono = { version = "0.4", features = ["serde"] }
 
 # 5. 错误处理
-thiserror = "2.0.17" # 用于库 (crates/*)
-anyhow = "1.0"    # 用于主程序 (services/*)
+thiserror = "2.0.17"
+anyhow = "1.0"
 
 # 6. 日志与监控
 tracing = "0.1"
@@ -51,27 +51,32 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # 7. 配置管理
 config = "0.14"
 
-# 8. 数据库 (以 SQLx 为例，连接 Postgres)
+# 8. 数据库
 sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "rust_decimal"] }
-
-
-strum = { version = "0.26", features = ["derive"] }
-
-uuid = { version = "1.19", features = ["v4", "fast-rng", "serde"] }
-
-dotenvy = "0.15"
-
-# 缓存数据库配置
 redis = { version = "0.24", features = ["tokio-comp", "script"] }
-# Redis 连接池
 deadpool-redis = "0.14"
 
+# 9. 其他工具
+strum = { version = "0.26", features = ["derive"] }
+uuid = { version = "1.19", features = ["v4", "fast-rng", "serde"] }
+dotenvy = "0.15"
 color-eyre = "0.6"
 
-# 9. 内部模块引用 (方便子 crate 互相引用)
+# ============================================
+# [新增] 10. AI Agent 专属依赖
+# ============================================
+# OpenAI / DeepSeek 官方兼容接口库
+async-openai = "0.26"
+# 计算 Token 数量，防止 Prompt 超长
+tiktoken-rs = "0.5"
+
+# ============================================
+# 11. 内部模块引用
+# ============================================
 quant-core = { path = "./crates/core" }
 quant-feed = { path = "./crates/feed" }
 quant-strategy = { path = "./crates/strategy" }
 quant-execution = { path = "./crates/execution" }
 quant-storage = { path = "./crates/storage" }
 quant-risk = { path = "./crates/risk" }
+quant-agent = { path = "./crates/agent" }
