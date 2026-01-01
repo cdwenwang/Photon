@@ -31,6 +31,10 @@ pub struct AgentContext {
     /// 用于 Agent 之间共享数据，而不需要把大段文本塞进 Prompt
     /// e.g. Researcher 查到的 5000 字新闻存这里，只返回摘要给 Manager
     pub shared_data: HashMap<String, Value>,
+
+    /// 新增：专门存储每个任务的结构化产出，Key 为 TaskID
+    /// 这样后续任务可以精确引用，而不是在文本历史里大海捞针
+    pub artifacts: HashMap<String, Value>,
 }
 
 impl AgentContext {
@@ -39,6 +43,7 @@ impl AgentContext {
             trace_id: Uuid::new_v4(),
             history: Vec::new(),
             shared_data: HashMap::new(),
+            artifacts: HashMap::new(),
         }
     }
 }

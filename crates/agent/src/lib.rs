@@ -1,10 +1,11 @@
+pub mod config;
 mod llm;
 pub mod manager;
+pub mod personas;
+pub mod skills;
+pub mod store;
+pub mod tools;
 pub mod types;
-mod personas;
-mod tools;
-mod skills;
-mod store;
 
 pub use types::*;
 
