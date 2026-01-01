@@ -1,5 +1,5 @@
 pub mod config;
-mod llm;
+pub mod llm;
 pub mod manager;
 pub mod personas;
 pub mod skills;
