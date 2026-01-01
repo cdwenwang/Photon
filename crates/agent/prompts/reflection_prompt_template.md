@@ -26,10 +26,8 @@ failure and propose a fix.
 
 Output a single JSON object:
 
-``` json
 {
 "new_skill": "Name of the skill to use for retry (can be the same)",
 "new_params": { ...corrected parameters... },
 "reason": "Explanation of why this change will fix the error"
 }
-```

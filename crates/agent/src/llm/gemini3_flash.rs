@@ -5,6 +5,7 @@ use dotenvy::dotenv;
 use reqwest::header;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::str::FromStr;
 use std::time::Duration;
 use tokio::sync::OnceCell;
 
@@ -58,7 +59,7 @@ impl GeminiBackend {
         dotenv().ok();
         // 从环境变量获取 KEY，避免硬编码
         let api_key = std::env::var("GEMINI_API_KEY").unwrap_or("YOUR_TEST_KEY".to_string());
-        let model = "gemini-3-flash-preview".to_string();
+        let model = "gemini-2.5-flash".to_string();
         // 构建默认 Header，包含 API Key (也可以在每次请求的 URL query 中传，这里按 Header 方式)
         let mut headers = header::HeaderMap::new();
         headers.insert(
@@ -84,10 +85,11 @@ impl GeminiBackend {
 impl ModelBackend for GeminiBackend {
     async fn chat(&self, system_prompt: &str, user_input: &str) -> Result<String> {
         // 1. 构建 URL
-        let url = format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
-            self.model
-        );
+        // let url = format!(
+        //     "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
+        //     self.model
+        // );
+        let url = String::from_str("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent")?;
 
         // 2. 构建请求 Body
         // Gemini 支持 system_instruction 字段，但为了兼容性且简单起见，

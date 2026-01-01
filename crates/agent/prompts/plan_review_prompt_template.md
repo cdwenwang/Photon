@@ -25,9 +25,30 @@ deadlocks, or inefficiencies.
 If the plan is perfect, output the original JSON.
 If improvements are needed, output the **MODIFIED** JSON plan.
 
-``` json
 {
-"thought": "Critique of the original plan...",
-"tasks": [ ...modified tasks... ]
+  "thought": "Brief analysis of the user request and dependency logic...",
+  "tasks": [
+    {
+      "id": "task_1",
+      "description": "Clear instruction for the skill",
+      "skill_name": "ExactSkillNameFromList",
+      "dependencies": [],
+      "params": {
+        "arg_name": "value"
+      },
+      "acceptance_criteria": "Specific verification condition"
+    },
+    {
+      "id": "task_2",
+      "description": "...",
+      "skill_name": "...",
+      "dependencies": [
+        "task_1"
+      ],
+      "params": {
+        "url": "{{task_1.url}}"
+      },
+      "acceptance_criteria": "..."
+    }
+  ]
 }
-```

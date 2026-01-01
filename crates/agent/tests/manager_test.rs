@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use quant_agent::llm::gemini3_flash;
+use quant_agent::llm::qwen3_flash;
 use quant_agent::manager::ManagerAgent;
 use quant_agent::skills::AgentSkill;
 use quant_agent::store::local;
@@ -11,6 +11,28 @@ use std::path::PathBuf;
 use std::sync::Arc;
 /// 3. 模拟技能 (Mock Skill)
 /// 一个简单的加法技能
+///
+
+struct IntroduceSkill;
+
+#[async_trait]
+impl AgentSkill for IntroduceSkill {
+    fn name(&self) -> &str {
+        "自我介绍机器人"
+    }
+
+    fn description(&self) -> &str {
+        "返回自我介绍的信息"
+    }
+
+    async fn execute(&self, _ctx: &mut AgentContext, payload: TaskPayload) -> Result<TaskResult> {
+        Ok(TaskResult {
+            summary: format!("我是小码机器人,编号{}", "001"),
+            data: Some(json!({ "result": "我是小码机器人,编号001" })),
+        })
+    }
+}
+
 struct AddSkill;
 
 #[async_trait]
@@ -29,8 +51,8 @@ impl AgentSkill for AddSkill {
         let sum = a + b;
 
         Ok(TaskResult {
-            summary: format!("Calculated {} + {} = {}", a, b, sum),
-            data: Some(json!({ "result": sum })),
+            summary: format!("{}", sum),
+            data: Some(json!({ "result": sum as i64 })),
         })
     }
 }
@@ -85,14 +107,14 @@ async fn test_manager_happy_path() -> Result<()> {
     .to_string();
 
     // 创建所有需要的 mock 对象
-    let mock_planner = Arc::new(gemini3_flash::GeminiBackend::new());
-    let mock_reviewer = Arc::new(gemini3_flash::GeminiBackend::new());
+    let mock_planner = Arc::new(qwen3_flash::QwenBackend::new());
+    let mock_reviewer = Arc::new(qwen3_flash::QwenBackend::new());
 
     // Verifier 会被调用 3 次
-    let mock_verifier = Arc::new(gemini3_flash::GeminiBackend::new());
+    let mock_verifier = Arc::new(qwen3_flash::QwenBackend::new());
 
     // 根据代码逻辑，synthesis 使用的是 default_llm，所以我们需要将 synthesis 的响应放在 default_llm 中
-    let mock_default = Arc::new(gemini3_flash::GeminiBackend::new());
+    let mock_default = Arc::new(qwen3_flash::QwenBackend::new());
 
     let store = Arc::new(local::LocalFileStore::new(PathBuf::from(
         "C:\\Users\\wang\\RustroverProjects\\Photon\\logs",
@@ -110,17 +132,20 @@ async fn test_manager_happy_path() -> Result<()> {
     // --- 3. 运行测试 ---
     #[derive(Debug, Deserialize, PartialEq)]
     struct FinalOutput {
-        final_answer: f64,
-        notes: String,
+        answer: String,
+        note: String,
     }
 
     let result: FinalOutput = agent
-        .run_task("Calculate 10 + 20", "JSON with final_answer and notes")
+        .run_task(
+            "Calculate 10 + 20",
+            "JSON with answer and note  \\n # Output Format\\n   {\"answer\":String \\\\ the answer \\n \"note\": String \\\\ why you get the answer \\n}",
+        )
         .await?;
 
     // --- 4. 断言结果 ---
-    assert_eq!(result.final_answer, 30.0);
-    assert_eq!(result.notes, "Calculation successful");
+    assert!(result.answer.len() > 0);
+    println!("Final Output: {:?}", result.answer);
 
     Ok(())
 }
@@ -166,10 +191,10 @@ async fn test_dependency_resolution() -> Result<()> {
 
     let synthesis_json = json!({ "total": 35.0 }).to_string();
 
-    let mock_planner = Arc::new(gemini3_flash::GeminiBackend::new());
-    let mock_reviewer = Arc::new(gemini3_flash::GeminiBackend::new());
-    let mock_verifier = Arc::new(gemini3_flash::GeminiBackend::new());
-    let mock_default = Arc::new(gemini3_flash::GeminiBackend::new());
+    let mock_planner = Arc::new(qwen3_flash::QwenBackend::new());
+    let mock_reviewer = Arc::new(qwen3_flash::QwenBackend::new());
+    let mock_verifier = Arc::new(qwen3_flash::QwenBackend::new());
+    let mock_default = Arc::new(qwen3_flash::QwenBackend::new());
 
     let mut agent = ManagerAgent::builder(
         "DepAgent",

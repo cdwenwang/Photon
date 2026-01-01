@@ -25,7 +25,7 @@ must generate a NEW plan to finish the job, starting from the current state.
 
 # Available Skills
 
-{{skills}}
+{{available_skills}}
 
 # Instructions
 
@@ -38,6 +38,29 @@ must generate a NEW plan to finish the job, starting from the current state.
 Output a JSON object containing ONLY the new/remaining tasks:
 
 {
-"thought": "Strategy to recover from failure and complete the goal...",
-"tasks": [ ...list of new subtasks... ]
+  "thought": "Brief analysis of the user request and dependency logic...",
+  "tasks": [
+    {
+      "id": "task_1",
+      "description": "Clear instruction for the skill",
+      "skill_name": "ExactSkillNameFromList",
+      "dependencies": [],
+      "params": {
+        "arg_name": "value"
+      },
+      "acceptance_criteria": "Specific verification condition"
+    },
+    {
+      "id": "task_2",
+      "description": "...",
+      "skill_name": "...",
+      "dependencies": [
+        "task_1"
+      ],
+      "params": {
+        "url": "{{task_1.url}}"
+      },
+      "acceptance_criteria": "..."
+    }
+  ]
 }

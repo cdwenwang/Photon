@@ -1,6 +1,7 @@
 use anyhow::Result;
 use async_trait::async_trait;
 pub mod gemini3_flash;
+pub mod qwen3_flash;
 
 /// 模型后端抽象接口 (ModelBackend)
 ///

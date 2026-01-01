@@ -876,15 +876,25 @@ impl ManagerAgent {
 
     /// 清理 LLM 返回的 Markdown 代码块格式
     fn clean_json_markdown(input: &str) -> String {
-        input
-            .trim()
-            .strip_prefix("```json")
-            .unwrap_or(input)
-            .strip_prefix("```")
-            .unwrap_or(input)
-            .strip_suffix("```")
-            .unwrap_or(input)
-            .trim()
-            .to_string()
+        let mut s = input.trim();
+
+        // 步骤 1: 处理前缀
+        // 逻辑：如果是 ```json 开头，就去掉；
+        // 如果不是，再看看是不是 ``` 开头，是就去掉；
+        // 绝不回退到原始 input
+        if let Some(stripped) = s.strip_prefix("```json") {
+            s = stripped;
+        } else if let Some(stripped) = s.strip_prefix("```") {
+            s = stripped;
+        }
+
+        // 步骤 2: 处理后缀
+        if let Some(stripped) = s.strip_suffix("```") {
+            s = stripped;
+        }
+
+        // 步骤 3: 再次修剪可能残留的换行符
+        let result = s.trim().to_string();
+        result
     }
 }

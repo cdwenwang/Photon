@@ -26,7 +26,6 @@ execution plan (DAG - Directed Acyclic Graph).
 
 You must output a single JSON object matching the following structure (no markdown text outside JSON):
 
-```json
 {
   "thought": "Brief analysis of the user request and dependency logic...",
   "tasks": [
@@ -54,4 +53,3 @@ You must output a single JSON object matching the following structure (no markdo
     }
   ]
 }
-```
