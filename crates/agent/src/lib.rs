@@ -1,4 +1,5 @@
 pub mod config;
+pub mod host;
 pub mod llm;
 pub mod manager;
 pub mod personas;
