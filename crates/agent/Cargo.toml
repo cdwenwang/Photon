@@ -29,3 +29,4 @@ uuid = { version = "1.19.0", features = ["v4"] }
 futures = "0.3.31"     # Agent 需要看行情
 # quant-risk = { workspace = true }   # 如果 Agent 需要预检风控
 dotenvy = { workspace = true }
+regex = "1.12.2"

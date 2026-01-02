@@ -3,7 +3,6 @@ pub mod host;
 pub mod llm;
 pub mod manager;
 pub mod personas;
-pub mod skills;
 pub mod store;
 pub mod tools;
 pub mod types;

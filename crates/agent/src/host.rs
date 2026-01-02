@@ -1,5 +1,5 @@
 use crate::llm::ModelBackend;
-use crate::skills::AgentSkill;
+use crate::personas::AgentSkill;
 use crate::store::ContextStore;
 use crate::types::{AgentContext, TaskPayload};
 use anyhow::{Context, Result};
@@ -7,9 +7,9 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
 // --- 数据结构 (保持不变) ---
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

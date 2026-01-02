@@ -1,6 +1,5 @@
 use crate::config::{AgentLLMConfig, PromptConfig}; // 假设 config 在同级模块
 use crate::llm::ModelBackend;
-use crate::skills::AgentSkill;
 use crate::store::ContextStore;
 use crate::types::{AgentContext, TaskPayload};
 use anyhow::{Context, Result};
@@ -9,8 +8,10 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
+use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use crate::personas::AgentSkill;
 
 pub struct ManagerAgentBuilder {
     name: String,

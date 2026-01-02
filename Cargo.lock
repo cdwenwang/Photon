@@ -1727,6 +1727,7 @@ dependencies = [
  "quant-core",
  "quant-feed",
  "quant-storage",
+ "regex",
  "reqwest",
  "schemars",
  "serde",

@@ -2,13 +2,14 @@ use anyhow::Result;
 use async_trait::async_trait;
 use quant_agent::llm::qwen3_flash;
 use quant_agent::manager::ManagerAgent;
-use quant_agent::skills::AgentSkill;
+use quant_agent::personas::AgentSkill;
 use quant_agent::store::local;
 use quant_agent::types::{AgentContext, TaskPayload, TaskResult};
 use serde::Deserialize;
 use serde_json::json;
 use std::path::PathBuf;
 use std::sync::Arc;
+
 /// 3. 模拟技能 (Mock Skill)
 /// 一个简单的加法技能
 ///
