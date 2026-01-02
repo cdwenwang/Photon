@@ -1,5 +1,8 @@
-mod fundamental_skill;
-mod technical_skill;
+pub mod fundamental_skill;
+pub mod macro_skill;
+pub mod technical_skill;
+mod sentiment_skill;
+mod short_seller_skill;
 
 use crate::{AgentContext, TaskPayload, TaskResult};
 use anyhow::Result;
