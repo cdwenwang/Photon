@@ -1,13 +1,13 @@
 use crate::repository::common;
 use anyhow::Result;
-use quant_core::enums::BarPeriod;
+use chrono::NaiveDate;
 use quant_core::market::MarketBar;
+use quant_core::BarPeriod;
 use sqlx::MySqlPool;
 use tokio::sync::OnceCell;
 
 static MARKET_DATA_POOL: OnceCell<MarketDataRepository> = OnceCell::const_new();
 
-/// 获取市场数据仓储层实例
 pub async fn repository() -> &'static MarketDataRepository {
     MARKET_DATA_POOL
         .get_or_init(|| async {
@@ -17,10 +17,6 @@ pub async fn repository() -> &'static MarketDataRepository {
         .await
 }
 
-/// 市场数据仓储层 (Market Data Repository)
-///
-/// 负责 K 线 (OHLCV) 数据的持久化和查询。
-/// 针对高频写入和范围查询进行了优化。
 #[derive(Clone)]
 pub struct MarketDataRepository {
     pool: MySqlPool,
@@ -33,18 +29,17 @@ impl MarketDataRepository {
 
     /// 保存 K 线数据 (Upsert)
     ///
-    /// 逻辑: 根据 (exchange, symbol, period, start_time) 唯一索引:
-    /// - 不存在: 插入新记录。
-    /// - 已存在: 更新 OHLCV 和成交量 (覆盖更新)。
+    /// 唯一索引变更为: (exchange, symbol, bar_period, start_time, type)
     pub async fn save(&self, bar: &MarketBar) -> Result<u64> {
+        // 注意: type 是 SQL 关键字，必须加反引号 `type`
         let result = sqlx::query!(
             r#"
             INSERT INTO `market_bar` (
-                exchange, symbol, bar_period, 
+                exchange, symbol, bar_period, `type`,
                 open, high, low, close, volume, amount, 
                 start_time, end_time
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE 
                 open = VALUES(open),
                 high = VALUES(high),
@@ -54,17 +49,18 @@ impl MarketDataRepository {
                 amount = VALUES(amount),
                 end_time = VALUES(end_time)
             "#,
-            bar.exchange,
-            bar.symbol,
-            bar.bar_period.to_string(), // Enum -> String
+            bar.exchange,               // 假设 Exchange 实现了 sqlx::Type
+            bar.symbol,                 // 假设 CurrencyPair 实现了 sqlx::Type
+            bar.bar_period.to_string(), // BarPeriod 转字符串
+            bar.trade_type,             // u8
             bar.open.0,                 // Price -> Decimal
             bar.high.0,
             bar.low.0,
             bar.close.0,
-            bar.volume.0, // Quantity -> Decimal
-            bar.amount,   // Option<Decimal> (自动处理 None)
-            bar.start_time,
-            bar.end_time
+            bar.volume.0,   // Quantity -> Decimal
+            bar.amount,     // Option<Decimal>
+            bar.start_time, // NaiveDate -> SQL DATE
+            bar.end_time    // NaiveDate -> SQL DATE
         )
         .execute(&self.pool)
         .await?;
@@ -72,26 +68,28 @@ impl MarketDataRepository {
         Ok(result.rows_affected())
     }
 
-    /// 查询最近的 N 根 K 线 (用于策略初始化/计算指标)
+    /// 查询最近的 N 天 K 线
     ///
-    /// 排序: 按 start_time 倒序 (DESC)，取出最近的数据。
-    /// 注意: 返回结果通常需要再反转回正序 (ASC) 给策略计算使用。
+    /// 参数 trade_type: 通常查询普通交易(21)
     pub async fn find_recent_bars(
         &self,
         exchange: &str,
         symbol: &str,
         bar_period: BarPeriod,
+        trade_type: u8,
         limit: i64,
     ) -> Result<Vec<MarketBar>> {
-        // 使用 query_as 函数版进行映射
         let bars = sqlx::query_as::<_, MarketBar>(
             r#"
             SELECT 
-                id, exchange, symbol, bar_period ,
+                id, exchange, symbol, bar_period, `type`,
                 open, high, low, close, volume, amount, 
                 start_time, end_time, gmt_create
             FROM market_bar
-            WHERE exchange = ? AND symbol = ? AND bar_period = ?
+            WHERE exchange = ? 
+              AND symbol = ? 
+              AND bar_period = ?
+              AND `type` = ?
             ORDER BY start_time DESC
             LIMIT ?
             "#,
@@ -99,6 +97,7 @@ impl MarketDataRepository {
         .bind(exchange)
         .bind(symbol)
         .bind(bar_period.to_string())
+        .bind(trade_type)
         .bind(limit)
         .fetch_all(&self.pool)
         .await?;
@@ -106,27 +105,27 @@ impl MarketDataRepository {
         Ok(bars)
     }
 
-    /// 查询指定时间范围的 K 线 (用于回测)
-    ///
-    /// 排序: 按 start_time 正序 (ASC)
+    /// 查询指定日期范围的 K 线
     pub async fn find_bars_by_range(
         &self,
         exchange: &str,
         symbol: &str,
         bar_period: BarPeriod,
-        start_ts: i64,
-        end_ts: i64,
+        trade_type: u8,
+        start_date: NaiveDate,
+        end_date: NaiveDate,
     ) -> Result<Vec<MarketBar>> {
         let bars = sqlx::query_as::<_, MarketBar>(
             r#"
             SELECT 
-                id, exchange, symbol, bar_period  ,
+                id, exchange, symbol, bar_period, `type`,
                 open, high, low, close, volume, amount, 
                 start_time, end_time, gmt_create
             FROM market_bar
             WHERE exchange = ? 
               AND symbol = ? 
               AND bar_period = ?
+              AND `type` = ?
               AND start_time >= ? 
               AND start_time <= ?
             ORDER BY start_time ASC
@@ -135,8 +134,9 @@ impl MarketDataRepository {
         .bind(exchange)
         .bind(symbol)
         .bind(bar_period.to_string())
-        .bind(start_ts)
-        .bind(end_ts)
+        .bind(trade_type)
+        .bind(start_date)
+        .bind(end_date)
         .fetch_all(&self.pool)
         .await?;
 
